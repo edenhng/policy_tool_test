@@ -2,6 +2,7 @@ gensim==4.3.1
 pandas==1.3.1
 streamlit==0.85.1
 stqdm==0.0.4
+nltk
 spacy-streamlit==1.0.1
 spacy-transformers==1.0.3
 transformers==4.6.0
