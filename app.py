@@ -1,6 +1,6 @@
 import streamlit as st
 import spacy
-import fr_core_web_sm
+import fr_core_news_sm
 import en_core_web_sm
 from annotated_text import annotated_text
 
