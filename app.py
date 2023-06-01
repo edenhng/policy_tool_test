@@ -40,6 +40,11 @@ def main():
     ###Description
     +This is an app in the testing phased. Developed by Eden Hoang - a DITT graduate for DITT EAA.
     """)
+    
+    st.subheader("Named Entity Recognition")
+        raw_text = st.text_area("Your Text", "Enter Text Here")
+        docx = nlp(raw_text)
+        spacy_streamlit.visualize_ner(docx, labels=nlp.get_pipe('ner').labels)
 
 if __name__ == '__main__':
     main()
