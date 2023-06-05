@@ -1,67 +1,62 @@
+#Import Library
 import streamlit as st
+import os
+
+#Work with Core NLP Libraries
+import spacy_streamlit
 import spacy
-import fr_core_news_sm
-import en_core_web_sm
-from annotated_text import annotated_text
+import gensim
+import nltk
+nltk.download('punkt')
+
+#Sumy Summary Packages
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lex_rank import LexRankSummarizer
+
+#Function for Sumy Summarization
+def sumy_summarizer(docx):
+    parser = PlaintextParser.from_string(docx,Tokenizer("english"))
+    lex_summarizer = LexRankSummarizer()
+    summary = lex_summarizer(parser.document, 3)
+    summary_list = [str(sentence) for sentence in summary]
+    result = ' '.join(summary_list)
+    return result
 
 
-@st.cache(show_spinner=False, allow_output_mutation=True, suppress_st_warning=True)
-def load_models():
-    french_model = spacy.load("fr_core_news_sm")
-    english_model = spacy.load("en_core_web_sm")
-    models = {"en": english_model, "fr": french_model}
-    return models
+#Function to Analyse Tokens and Lemma
+def text_analyzer(my_text):
+    nlp = spacy.load('en_core_web_sm')
+    docx = nlp(my_text)
+    #tokens = [token.text for token in docx]
+    allData = [('"Token":{}, \n"Lemma":{}'.format(token.text, token.lemma_)) for token in docx ]
+    return allData
 
+#The Main Function
+def main():
+    #Title
+    st.title("A policy briefing tool to assist Net Zero policy analysis")
+    st.subheader("An internal product to deliver to DITT Economics")
+    st.markdown("""
+    ###Description
+    +This is an app in the testing phased. Developed by Eden Hoang - a DITT graduate for DITT EAA.
+    """)
+    
+    menu = ["Home", "NER"]
+    choice = st.sidebar.selectbox("Menu", menu)
+    
+    if choice == "Home":
+        st.subheader("Tokenization")
+        raw_text = st.text_area("Your Text", "Enter Text Here")
+        docx = nlp(raw_text)
+        if st.button("Tokenize"):
+            spacy_streamlit.visualize_tokens(docx, atrrs=['text', 'pos_', 'dep_', 'ent_type_'])
+            
+    elif choice == "NER":
+        st.subheader("Named Entity Recognition")
+        raw_text = st.text_area("Your Text", "Enter Text Here")
+        docx = nlp(raw_text)
+        spacy_streamlit.visualize_ner(docx, labels=nlp.get_pipe('ner').labels)
 
-def process_text(doc, selected_entities, anonymize=False):
-    tokens = []
-    for token in doc:
-        if (token.ent_type_ == "PERSON") & ("PER" in selected_entities):
-            tokens.append((token.text, "Person", "#faa"))
-        elif (token.ent_type_ in ["GPE", "LOC"]) & ("LOC" in selected_entities):
-            tokens.append((token.text, "Location", "#fda"))
-        elif (token.ent_type_ == "ORG") & ("ORG" in selected_entities):
-            tokens.append((token.text, "Organization", "#afa"))
-        else:
-            tokens.append(" " + token.text + " ")
-
-    if anonymize:
-        anonmized_tokens = []
-        for token in tokens:
-            if type(token) == tuple:
-                anonmized_tokens.append(("X" * len(token[0]), token[1], token[2]))
-            else:
-                anonmized_tokens.append(token)
-        return anonmized_tokens
-
-    return tokens
-
-
-models = load_models()
-
-selected_language = st.sidebar.selectbox("Select a language", options=["en", "fr"])
-selected_entities = st.sidebar.multiselect(
-    "Select the entities you want to detect",
-    options=["LOC", "PER", "ORG"],
-    default=["LOC", "PER", "ORG"],
-)
-selected_model = models[selected_language]
-
-text_input = st.text_area("Type a text to anonymize")
-
-uploaded_file = st.file_uploader("or Upload a file", type=["doc", "docx", "pdf", "txt"])
-if uploaded_file is not None:
-    text_input = uploaded_file.getvalue()
-    text_input = text_input.decode("utf-8")
-
-anonymize = st.checkbox("Anonymize")
-doc = selected_model(text_input)
-tokens = process_text(doc, selected_entities)
-
-annotated_text(*tokens)
-
-if anonymize:
-    st.markdown("**Anonymized text**")
-    st.markdown("---")
-    anonymized_tokens = process_text(doc, selected_entities, anonymize=anonymize)
-    annotated_text(*anonymized_tokens)
+if __name__ == '__main__':
+    main()
